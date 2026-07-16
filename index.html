@@ -1,73 +1,52 @@
-<script>
-    // アイテムリストを最新の状態に修正
-    const items = [
-        { id: 'outside', x: 500, y: 300, r: 400, title: "救急隊", body: "外では赤と青の光が激しく明滅している。隊員たちが必死に動いている。" },
-        { id: 'gloves', x: 520, y: 700, r: 50, title: "軍手", body: "汚れた軍手。手を保護できそうだ。" },
-        { id: 'glass', x: 400, y: 800, r: 50, title: "ガラス片" },
-        { id: 'toy', x: 780, y: 750, r: 100, title: "テディベア" },
-        { id: 'box', x: 520, y: 550, r: 80, isBox: true },
-        { id: 'phone', x: 200, y: 850, r: 80, title: "スマホ", body: "画面の時刻は『04』時で止まっている。" },
-        { id: 'ring', x: 200, y: 720, r: 50, title: "指輪", body: "内側に『1204』とある。" },
-        { id: 'shadow', x: 380, y: 500, r: 100, isShadow: true }
-    ];
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; overflow: hidden; }
+        
+        #game-ui { position: relative; width: 100vw; height: 100vh; background: #222; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        #ui-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 400px; text-align: center; z-index: 10; background: rgba(0,0,0,0.85); padding: 25px; border: 1px solid #555; border-radius: 5px; display: none; }
+        
+        #msg { position: absolute; top: 80px; width: 80%; left: 10%; text-align: center; font-size: 1.1rem; z-index: 5; color: #eee; }
+    </style>
+</head>
+<body>
 
-    // ... タッチイベント内を以下のように調整 ...
-    canvas.addEventListener('touchstart', (e) => {
-        // ... (省略: 座標計算) ...
+    <div id="game-ui">
+        <div id="msg">……何が起きたんだ？</div>
+        <canvas id="canvas"></canvas>
+        <div id="ui-overlay" onclick="closeOverlay()"></div>
+    </div>
 
-        items.forEach(item => {
-            if (Math.hypot(item.x - tx, item.y - ty) < item.r) {
-                
-                // 救急隊の判定を追加
-                if (item.id === 'outside') {
-                    if (!collectedMemos.find(m => m.title === "救急隊")) {
-                        collectedMemos.push({ title: item.title, body: item.body });
-                    }
-                    msgDiv.innerText = "外では赤と青の光が激しく明滅している。";
-                }
-                // 軍手の判定
-                else if (item.id === 'gloves') {
-                    if (!inventory.includes('gloves')) {
-                        inventory.push('gloves');
-                        msgDiv.innerText = "軍手を手に入れた。";
-                    }
-                }
-                // ガラス片の判定（軍手所持が条件）
-                else if (item.id === 'glass') {
-                    if (inventory.includes('gloves')) {
-                        if (!inventory.includes('glass')) {
-                            inventory.push('glass');
-                            msgDiv.innerText = "軍手をしてガラス片を拾った。";
-                        } else {
-                            msgDiv.innerText = "すでにガラス片を持っている。";
-                        }
-                    } else {
-                        msgDiv.innerText = "素手では危ない。何かで保護しないと…";
-                    }
-                }
-                // テディベア（ガラス片所持が条件）
-                else if (item.id === 'toy') {
-                    if (inventory.includes('glass')) {
-                        if (!collectedMemos.find(m => m.title === "古い手紙")) {
-                            collectedMemos.push({ title: "古い手紙", body: "『ヒロへ。産まれてきてくれてありがとう。体重2983gの宝物。』" });
-                            msgDiv.innerText = "ガラス片でタグを切った。中から手紙が出てきた。";
-                        } else {
-                            msgDiv.innerText = "もう何も入っていない。";
-                        }
-                    } else {
-                        msgDiv.innerText = "テディベア。タグが付いている。何かで切れば開けそうだ。";
-                    }
-                }
-                // その他（箱や人影、スマホなど）
-                else if (item.isBox) { /* ... */ }
-                else if (item.isShadow) { /* ... */ }
-                else {
-                    if (!collectedMemos.find(m => m.title === item.title)) {
-                        collectedMemos.push({ title: item.title, body: item.body || "" });
-                    }
-                    msgDiv.innerText = item.title + "を調べた...";
-                }
-            }
-        });
-    });
-</script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const msgDiv = document.getElementById('msg');
+        
+        const img = new Image();
+        img.src = 'IMG_4790.PNG'; 
+
+        // 画像の読み込み失敗を想定した処理
+        img.onerror = () => {
+            msgDiv.innerText = "エラー: 画像 'IMG_4790.PNG' が見つかりません。ファイル名を確認してください。";
+            console.error("Image load failed");
+        };
+
+        img.onload = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.drawImage(img, 0, 0, window.innerWidth, window.innerHeight);
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+        };
+        
+        // 読み込み中もとりあえずCanvasを初期化する
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    </script>
+</body>
+</html>
