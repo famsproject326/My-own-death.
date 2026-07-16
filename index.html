@@ -17,10 +17,12 @@
 
         #game-ui { display: none; position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; width: 100vw; height: 100vh; }
+        
+        /* ★メッセージを上部に変更 */
         #msg { 
-            position: absolute; bottom: 80px; width: 80%; left: 10%; 
+            position: absolute; top: 50px; width: 80%; left: 10%; 
             text-align: center; font-size: 1.2rem; z-index: 6; 
-            background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; 
+            background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; 
             pointer-events: none; transition: opacity 0.5s;
         }
     </style>
@@ -35,7 +37,7 @@
     </div>
 
     <div id="game-ui">
-        <div id="msg">……何が起きたんだ？</div>
+        <div id="msg">何が起きたんだ……？</div>
         <canvas id="canvas"></canvas>
     </div>
 
@@ -44,8 +46,6 @@
         const ctx = canvas.getContext('2d');
         const msgDiv = document.getElementById('msg');
         const img = new Image();
-        
-        // ★GitHubにアップロードした実際のファイル名に合わせてください（大文字小文字注意）
         img.src = 'IMG_4790.PNG'; 
 
         const items = [
@@ -56,45 +56,25 @@
             { id: 'ring', x: 200, y: 720, r: 50, text: "指輪。内側に『1204』と刻印されている。" }
         ];
 
-        // オープニングからゲーム画面への切り替え
         function handleStart() {
             document.getElementById('start-screen').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             initGame();
         }
 
-        // ★修正：画像の読み込みを待ってから描画する関数
         function initGame() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-
-            // 既に画像が読み込み終わっている場合
-            if (img.complete) {
-                draw();
-            } else {
-                // まだなら読み込んでから描画
-                img.onload = () => {
-                    draw();
-                };
-                // 読み込みエラー対策
-                img.onerror = () => {
-                    console.error("画像の読み込みに失敗しました: " + img.src);
-                    msgDiv.innerText = "エラー: 画像を読み込めませんでした。";
-                };
-            }
+            if (img.complete) { draw(); } else { img.onload = draw; }
         }
 
-        // 描画処理
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // 画像を画面全体に描画
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            // 暗いフィルター
             ctx.fillStyle = 'rgba(0,0,0,0.5)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
-        // タップ判定
         canvas.addEventListener('touchstart', (e) => {
             const rect = canvas.getBoundingClientRect();
             const tx = ((e.touches[0].clientX - rect.left) / rect.width) * 1000;
