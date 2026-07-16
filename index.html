@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; overflow: hidden; }
+        body { margin: 0; background: #000; color: #fff; font-family: serif; overflow: hidden; }
         
-        #game-ui { position: relative; width: 100vw; height: 100vh; background: #222; }
+        #game-ui { position: relative; width: 100vw; height: 100vh; display: none; }
         canvas { display: block; width: 100vw; height: 100vh; }
         
-        #ui-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 400px; text-align: center; z-index: 10; background: rgba(0,0,0,0.85); padding: 25px; border: 1px solid #555; border-radius: 5px; display: none; }
-        
-        #msg { position: absolute; top: 80px; width: 80%; left: 10%; text-align: center; font-size: 1.1rem; z-index: 5; color: #eee; }
+        #msg { position: absolute; top: 80px; width: 80%; left: 10%; text-align: center; font-size: 1.1rem; z-index: 5; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; pointer-events: none; }
+        #memo-btn { position: absolute; bottom: 30px; right: 20px; width: 60px; height: 60px; background: rgba(0,0,0,0.5); border: 1px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; z-index: 10; cursor: pointer; }
+        #ui-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 400px; text-align: center; z-index: 20; background: rgba(0,0,0,0.9); padding: 25px; border: 1px solid #555; display: none; }
     </style>
 </head>
 <body>
@@ -19,34 +19,77 @@
     <div id="game-ui">
         <div id="msg">……何が起きたんだ？</div>
         <canvas id="canvas"></canvas>
-        <div id="ui-overlay" onclick="closeOverlay()"></div>
+        <div id="ui-overlay" onclick="this.style.display='none'"></div>
+        <div id="memo-btn" onclick="showMemoList()">記憶</div>
     </div>
 
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const msgDiv = document.getElementById('msg');
-        
+        const uiOverlay = document.getElementById('ui-overlay');
         const img = new Image();
-        img.src = 'IMG_4790.PNG'; 
+        img.src = 'IMG_4790.PNG';
 
-        // 画像の読み込み失敗を想定した処理
-        img.onerror = () => {
-            msgDiv.innerText = "エラー: 画像 'IMG_4790.PNG' が見つかりません。ファイル名を確認してください。";
-            console.error("Image load failed");
-        };
+        let collectedMemos = [];
+        let inventory = [];
 
+        // 全てを画像ロード後に初期化
         img.onload = () => {
+            document.getElementById('game-ui').style.display = 'block';
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             ctx.drawImage(img, 0, 0, window.innerWidth, window.innerHeight);
             ctx.fillStyle = 'rgba(0,0,0,0.5)';
             ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
         };
-        
-        // 読み込み中もとりあえずCanvasを初期化する
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+
+        function showMemoList() {
+            uiOverlay.style.display = 'block';
+            uiOverlay.innerHTML = "<h3>記憶の断片</h3>" + 
+                (collectedMemos.length === 0 ? "<p>まだ何も思い出せない。</p>" : 
+                collectedMemos.map((m, i) => `<div class='memo-item' onclick='showDetail(${i}); event.stopPropagation();'>${m.title}</div>`).join(""));
+        }
+
+        function showDetail(i) {
+            uiOverlay.innerHTML = `<h3>${collectedMemos[i].title}</h3><p>${collectedMemos[i].body}</p>`;
+        }
+
+        const items = [
+            { id: 'outside', x: 500, y: 300, r: 400, title: "救急隊" },
+            { id: 'gloves', x: 520, y: 700, r: 50, title: "軍手" },
+            { id: 'glass', x: 400, y: 800, r: 50, title: "ガラス片" },
+            { id: 'toy', x: 780, y: 750, r: 100, title: "テディベア" },
+            { id: 'box', x: 520, y: 550, r: 80, isBox: true },
+            { id: 'phone', x: 200, y: 850, r: 80, title: "スマホ" },
+            { id: 'ring', x: 200, y: 720, r: 50, title: "指輪" },
+            { id: 'shadow', x: 380, y: 500, r: 100, isShadow: true }
+        ];
+
+        canvas.addEventListener('touchstart', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const tx = ((e.touches[0].clientX - rect.left) / rect.width) * 1000;
+            const ty = ((e.touches[0].clientY - rect.top) / rect.height) * 1000;
+
+            items.forEach(item => {
+                if (Math.hypot(item.x - tx, item.y - ty) < item.r) {
+                    if (item.id === 'gloves') {
+                        inventory.push('gloves'); msgDiv.innerText = "軍手を手に入れた。";
+                    } else if (item.id === 'glass') {
+                        if (inventory.includes('gloves')) { inventory.push('glass'); msgDiv.innerText = "軍手でガラスを拾った。"; }
+                        else { msgDiv.innerText = "素手では危ない。"; }
+                    } else if (item.id === 'toy' && inventory.includes('glass')) {
+                        collectedMemos.push({ title: "手紙", body: "体重2983gの宝物。" });
+                        msgDiv.innerText = "タグを切った。";
+                    } else if (item.isBox) {
+                        let input = prompt("4桁の数字を入力");
+                        if (input === "1204") msgDiv.innerText = "箱が開いた。";
+                    } else {
+                        msgDiv.innerText = item.title + "を調べた。";
+                    }
+                }
+            });
+        });
     </script>
 </body>
 </html>
