@@ -1,31 +1,36 @@
-<style>
-    body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; overflow: hidden; }
-    
-    /* フェードイン・点滅のアニメーション */
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; overflow: hidden; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-    #start-screen { 
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-        display: flex; flex-direction: column; justify-content: center; align-items: center;
-        background: #000; z-index: 10; cursor: pointer;
-    }
+        #start-screen { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: #000; z-index: 10; cursor: pointer;
+        }
 
-    /* 画面1と2の制御 */
-    .fade-text { animation: fadeIn 2s ease-in-out forwards; }
-    #tap-to-start { 
-        margin-top: 50px; 
-        animation: blink 2s ease-in-out infinite; 
-        font-size: 0.9rem; color: #888; 
-    }
+        .fade-text { opacity: 0; animation: fadeIn 2s ease-in-out forwards; }
+        #tap-to-start { margin-top: 50px; animation: blink 2s ease-in-out infinite; font-size: 0.9rem; color: #888; }
 
-    #game-ui { display: none; }
-    canvas { display: block; }
-    #msg { position: absolute; bottom: 20%; width: 80%; left: 10%; text-align: center; font-size: 1.1rem; opacity: 0; transition: opacity 1.5s; pointer-events: none; }
-</style>
-
+        #game-ui { display: none; }
+        canvas { display: block; }
+        #msg { 
+            position: absolute; bottom: 20%; width: 80%; left: 10%; 
+            text-align: center; font-size: 1.1rem; line-height: 1.8;
+            opacity: 0; transition: opacity 1.5s ease-in-out; pointer-events: none;
+            text-shadow: 0 0 10px #000;
+        }
+    </style>
+</head>
 <body>
-    <div id="start-screen" onclick="showSecondScreen()">
+
+    <div id="start-screen" onclick="handleStart()">
         <div id="screen1">
             <p class="fade-text" style="font-size: 1.5rem;">僕は死んだ。</p>
             <p class="fade-text" style="font-size: 1.5rem; animation-delay: 2s;">僕は笑った。</p>
@@ -42,21 +47,87 @@
     </div>
 
     <script>
-        function showSecondScreen() {
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const msg = document.getElementById('msg');
+        let gameClear = false;
+
+        // スタート画面遷移
+        function handleStart() {
             const s1 = document.getElementById('screen1');
             const s2 = document.getElementById('screen2');
-            
             if (s1.style.display !== 'none') {
                 s1.style.display = 'none';
                 s2.style.display = 'block';
             } else {
-                // 2画面目でタップされたらゲーム本編へ
                 document.getElementById('start-screen').style.display = 'none';
                 document.getElementById('game-ui').style.display = 'block';
-                draw();
-                setTimeout(() => { msg.style.opacity = 1; }, 500);
+                initGame();
             }
         }
-        // 以下、ゲーム本体のロジックは前のコードと同じ
+
+        // ゲーム初期化
+        function initGame() {
+            const dpr = window.devicePixelRatio || 2;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+            ctx.scale(dpr, dpr);
+            draw();
+            setTimeout(() => { msg.style.opacity = 1; }, 500);
+        }
+
+        const items = [
+            { id: 'phone', x: 80, y: 350, r: 40, text: "スマホの画面。通知時間は『12』時で止まっている。" },
+            { id: 'toy', x: 280, y: 400, r: 35, text: "ぬいぐるみのタグに『04』という刺繍がある。" },
+            { id: 'mirror', x: 200, y: 150, r: 30, text: "ルームミラー。映るはずの誰かの影は、もうどこにもない。" },
+            { id: 'belt', x: 120, y: 500, r: 30, text: "引きちぎれたシートベルト。僕を縛り付けていた、最後の枷。" },
+            { id: 'box', x: 200, y: 300, r: 50, text: "見覚えのない箱。4桁の数字を求めている。" }
+        ];
+
+        function showMsg(text) { 
+            msg.style.opacity = 0; 
+            setTimeout(() => { msg.innerHTML = text; msg.style.opacity = 1; }, 500); 
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+            items.forEach(item => {
+                ctx.beginPath();
+                ctx.arc(item.x, item.y, item.r, 0, Math.PI*2);
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+                ctx.shadowBlur = 15;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            });
+        }
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (gameClear) return;
+            const tx = e.touches[0].clientX;
+            const ty = e.touches[0].clientY;
+
+            items.forEach(item => {
+                if (Math.hypot(item.x - tx, item.y - ty) < item.r + 20) {
+                    if (item.id === 'box') {
+                        let input = prompt("4桁の数字を入力してください");
+                        if (input === "1204") {
+                            showMsg("12月4日……僕たちが家族になった日。<br>僕だけで済んだんだ。");
+                            gameClear = true;
+                        } else {
+                            showMsg("……違う。もっと大切な日付だったはずだ。");
+                        }
+                    } else {
+                        showMsg(item.text);
+                    }
+                }
+            });
+        });
     </script>
 </body>
+</html>
