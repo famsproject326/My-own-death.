@@ -5,19 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: serif; overflow: hidden; }
-        #loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 20; }
-        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000; z-index: 10; cursor: pointer; display: none; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        #start-screen { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: #000; z-index: 10; cursor: pointer; 
+        }
+        .fade-text { opacity: 0; animation: fadeIn 3s ease-in-out forwards; }
+        .delay-text { opacity: 0; animation: fadeIn 3s ease-in-out forwards; animation-delay: 3s; }
+
         #game-ui { display: none; position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; width: 100vw; height: 100vh; }
-        #msg { position: absolute; top: 50px; width: 80%; left: 10%; text-align: center; font-size: 1.2rem; z-index: 6; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; pointer-events: none; transition: opacity 0.5s; }
+        #msg { 
+            position: absolute; top: 50px; width: 80%; left: 10%; 
+            text-align: center; font-size: 1.2rem; z-index: 6; 
+            background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; 
+            pointer-events: none; transition: opacity 0.5s;
+        }
     </style>
 </head>
 <body>
 
-    <div id="loading">読み込み中...</div>
     <div id="start-screen" onclick="handleStart()">
-        <p style="font-size: 1.5rem;">僕は死んだ。</p>
-        <p style="font-size: 1.5rem; margin-top: 20px;">僕は笑った。</p>
+        <p class="fade-text" style="font-size: 1.5rem; margin-bottom: 20px;">僕は死んだ。</p>
+        <p class="delay-text" style="font-size: 1.5rem;">僕は笑った。</p>
+        <p style="margin-top: 50px; color: #555; font-size: 0.9rem;">（タップして物語へ）</p>
     </div>
 
     <div id="game-ui">
@@ -32,35 +46,28 @@
         const img = new Image();
         img.src = 'IMG_4790.PNG'; 
 
-        // 画像ロード完了後に画面を表示
-        img.onload = () => {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('start-screen').style.display = 'flex';
+        function handleStart() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'block';
             setupCanvas();
-        };
+        }
 
         function setupCanvas() {
             const dpr = window.devicePixelRatio || 1;
             canvas.width = window.innerWidth * dpr;
             canvas.height = window.innerHeight * dpr;
             ctx.scale(dpr, dpr);
-            draw();
+            if (img.complete) { draw(); } else { img.onload = draw; }
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // 画面いっぱいに描画
             ctx.drawImage(img, 0, 0, window.innerWidth, window.innerHeight);
             ctx.fillStyle = 'rgba(0,0,0,0.5)';
             ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
         }
 
-        function handleStart() {
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'block';
-        }
-
-        // アイテム判定等は以前と同じ
+        // 以前と同じアイテム判定処理
         const items = [
             { id: 'outside', x: 500, y: 300, r: 400, text: "外では赤と青の光が激しく明滅している。" },
             { id: 'toy', x: 780, y: 750, r: 100, text: "テディベア。タグに『2983』という文字が見える。" },
@@ -71,7 +78,6 @@
         ];
 
         let shadowTapCount = 0;
-
         canvas.addEventListener('touchstart', (e) => {
             const rect = canvas.getBoundingClientRect();
             const tx = ((e.touches[0].clientX - rect.left) / rect.width) * 1000;
