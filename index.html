@@ -18,13 +18,19 @@
         .fade-text { opacity: 0; animation: fadeIn 2s ease-in-out forwards; }
         #tap-to-start { margin-top: 50px; animation: blink 2s ease-in-out infinite; font-size: 0.9rem; color: #888; }
 
-        #game-ui { display: none; }
+        #game-ui { display: none; position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; }
+        
+        #footer-cover {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 50px;
+            background-color: #000; z-index: 5;
+        }
+
         #msg { 
-            position: absolute; bottom: 8%; width: 90%; left: 5%; 
+            position: absolute; bottom: 70px; width: 90%; left: 5%; 
             text-align: center; font-size: 1.1rem; line-height: 1.6;
             opacity: 0; transition: opacity 1.5s ease-in-out; pointer-events: none;
-            text-shadow: 0 0 10px #000;
+            text-shadow: 0 0 10px #000; z-index: 6;
         }
     </style>
 </head>
@@ -44,13 +50,24 @@
     <div id="game-ui">
         <div id="msg">車内には、手がかりが落ちているようだ。</div>
         <canvas id="canvas"></canvas>
+        <div id="footer-cover"></div>
     </div>
 
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const msg = document.getElementById('msg');
+        const img = new Image();
+        img.src = 'image_0.png'; // ★ここに実際の画像ファイル名を指定してください
         let gameClear = false;
+
+        const items = [
+            { id: 'phone', x: 400, y: 700, r: 60, text: "スマホの画面。通知時間は『12』時で止まっている。" },
+            { id: 'toy', x: 800, y: 950, r: 80, text: "ぬいぐるみのタグに『04』という刺繍がある。" },
+            { id: 'mirror', x: 540, y: 500, r: 50, text: "ルームミラー。映るはずの誰かの影は、もうどこにもない。" },
+            { id: 'belt', x: 350, y: 900, r: 70, text: "引きちぎれたシートベルト。僕を縛り付けていた、最後の枷。" },
+            { id: 'box', x: 550, y: 800, r: 90, text: "見覚えのない箱。4桁の数字を求めている。" }
+        ];
 
         function handleStart() {
             const s1 = document.getElementById('screen1');
@@ -66,49 +83,34 @@
         }
 
         function initGame() {
-            const dpr = window.devicePixelRatio || 2;
-            canvas.width = window.innerWidth * dpr;
-            canvas.height = window.innerHeight * dpr;
+            canvas.width = window.innerWidth * window.devicePixelRatio;
+            canvas.height = window.innerHeight * window.devicePixelRatio;
             canvas.style.width = window.innerWidth + 'px';
             canvas.style.height = window.innerHeight + 'px';
-            ctx.scale(dpr, dpr);
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            img.onload = draw;
             draw();
             setTimeout(() => { msg.style.opacity = 1; }, 500);
         }
 
-        const items = [
-            { id: 'phone', x: 80, y: 350, r: 40, text: "スマホの画面。通知時間は『12』時で止まっている。" },
-            { id: 'toy', x: 280, y: 400, r: 35, text: "ぬいぐるみのタグに『04』という刺繍がある。" },
-            { id: 'mirror', x: 200, y: 150, r: 30, text: "ルームミラー。映るはずの誰かの影は、もうどこにもない。" },
-            { id: 'belt', x: 120, y: 500, r: 30, text: "引きちぎれたシートベルト。僕を縛り付けていた、最後の枷。" },
-            { id: 'box', x: 200, y: 250, r: 50, text: "見覚えのない箱。4桁の数字を求めている。" }
-        ];
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const dpr = window.devicePixelRatio;
+            const offsetY = -50 * dpr; 
+            ctx.drawImage(img, 0, offsetY / dpr, window.innerWidth, (canvas.height - offsetY) / dpr);
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+        }
 
         function showMsg(text) { 
             msg.style.opacity = 0; 
             setTimeout(() => { msg.innerHTML = text; msg.style.opacity = 1; }, 500); 
         }
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#050505';
-            ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-            items.forEach(item => {
-                ctx.beginPath();
-                ctx.arc(item.x, item.y, item.r, 0, Math.PI*2);
-                ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-                ctx.shadowBlur = 15;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-                ctx.lineWidth = 3;
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-            });
-        }
-
         canvas.addEventListener('touchstart', (e) => {
             if (gameClear) return;
-            const tx = e.touches[0].clientX;
-            const ty = e.touches[0].clientY;
+            const tx = e.touches[0].clientX * window.devicePixelRatio;
+            const ty = e.touches[0].clientY * window.devicePixelRatio;
 
             items.forEach(item => {
                 if (Math.hypot(item.x - tx, item.y - ty) < item.r + 20) {
