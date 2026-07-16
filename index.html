@@ -4,34 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; overflow: hidden; }
+        /* 基本スタイル：背景は黒、文字は白、明朝体ベース */
+        body { 
+            margin: 0; 
+            background: #000; 
+            color: #fff; 
+            font-family: "游明朝", YuMincho, "ヒラギノ明朝 ProN W3", "Hiragino Mincho ProN", "HG明朝E", "ＭＳ Ｐ明朝", "MS PMincho", serif; 
+            overflow: hidden; 
+            width: 100vw;
+            height: 100vh;
+            position: fixed; /* スクロール防止 */
+        }
         
+        /* アニメーション定義 */
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
+        /* オープニング画面 */
         #start-screen { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             background: #000; z-index: 10; cursor: pointer;
         }
-
         .fade-text { opacity: 0; animation: fadeIn 2s ease-in-out forwards; }
-        #tap-to-start { margin-top: 50px; animation: blink 2s ease-in-out infinite; font-size: 0.9rem; color: #888; }
+        #tap-to-start { margin-top: 50px; animation: blink 2s ease-in-out infinite; font-size: 0.9rem; color: #aaa; letter-spacing: 0.1em; }
 
-        #game-ui { display: none; position: relative; width: 100vw; height: 100vh; }
-        canvas { display: block; }
+        /* ゲーム画面全体 */
+        #game-ui { display: none; position: relative; width: 100%; height: 100%; }
         
-        /* ロゴ回避用の黒帯 */
+        /* 背景Canvas */
+        canvas { display: block; width: 100%; height: 100%; object-fit: cover; }
+        
+        /* iPhone画面下部のロゴ回避用黒帯 */
         #footer-cover {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 50px;
             background-color: #000; z-index: 5;
         }
 
+        /* メッセージ表示エリア */
         #msg { 
-            position: absolute; bottom: 70px; width: 90%; left: 5%; 
-            text-align: center; font-size: 1.1rem; line-height: 1.6;
-            opacity: 0; transition: opacity 1.5s ease-in-out; pointer-events: none;
-            text-shadow: 0 0 10px #000; z-index: 6;
+            position: absolute; bottom: 80px; width: 84%; left: 8%; 
+            text-align: center; font-size: 1.1rem; line-height: 1.8; letter-spacing: 0.05em;
+            opacity: 0; transition: opacity 1.0s ease-in-out; pointer-events: none;
+            text-shadow: 0 0 10px rgba(0,0,0,0.7); z-index: 6;
+            background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;
         }
     </style>
 </head>
@@ -39,40 +55,50 @@
 
     <div id="start-screen" onclick="handleStart()">
         <div id="screen1">
-            <p class="fade-text" style="font-size: 1.5rem;">僕は死んだ。</p>
-            <p class="fade-text" style="font-size: 1.5rem; animation-delay: 2s;">僕は笑った。</p>
+            <p class="fade-text" style="font-size: 1.4rem; letter-spacing: 0.2em;">僕は、死んだ。</p>
+            <p class="fade-text" style="font-size: 1.4rem; letter-spacing: 0.2em; animation-delay: 2s;">僕は、笑った。</p>
         </div>
         <div id="screen2" style="display: none;">
-            <p style="font-size: 1.2rem;">なぜ、男は笑ったのか。</p>
+            <p style="font-size: 1.1rem; letter-spacing: 0.1em;">なぜ、男は笑ったのか。</p>
             <p id="tap-to-start">タップして開始</p>
         </div>
     </div>
 
     <div id="game-ui">
-        <div id="msg">車内には、手がかりが落ちているようだ。</div>
+        <div id="msg">……車内には、割れたガラスが散らばっている。</div>
         <canvas id="canvas"></canvas>
-        <div id="footer-cover"></div>
-    </div>
+        <div id="footer-cover"></div> </div>
 
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const msg = document.getElementById('msg');
+        const msgDiv = document.getElementById('msg');
         
-        // ★ここを画像ファイル名に変更しました
+        // 画像の読み込み設定 (GitHub上のファイル名IMG_4789.PNGを指定)
         const img = new Image();
         img.src = 'IMG_4789.PNG'; 
-        
-        let gameClear = false;
+        img.crossOrigin = "anonymous"; // クロスオリジン対策
 
+        let gameClear = false;
+        let dpr = window.devicePixelRatio || 1;
+
+        // アイテムの配置定義（画像上のピクセル座標を想定）
+        // ※画像サイズに合わせて調整が必要です。iPhoneの縦長画面を想定して配置しています。
         const items = [
-            { id: 'phone', x: 400, y: 700, r: 60, text: "スマホの画面。通知時間は『12』時で止まっている。" },
-            { id: 'toy', x: 800, y: 950, r: 80, text: "ぬいぐるみのタグに『04』という刺繍がある。" },
-            { id: 'mirror', x: 540, y: 500, r: 50, text: "ルームミラー。映るはずの誰かの影は、もうどこにもない。" },
-            { id: 'belt', x: 350, y: 900, r: 70, text: "引きちぎれたシートベルト。僕を縛り付けていた、最後の枷。" },
-            { id: 'box', x: 550, y: 800, r: 90, text: "見覚えのない箱。4桁の数字を求めている。" }
+            // 1. 外（フロントガラス全体）- タップ判定を大きく取る
+            { id: 'outside', x: canvas.width/2, y: 300, r: 400, text: "フロントガラスの向こうで、赤と青の光が揺れている。救急隊員や消防士たちが、必死に何かを叫んでいるようだ。" },
+            
+            // 2. ぬいぐるみ（右下の座席）
+            { id: 'toy', x: 800, y: 850, r: 120, text: "泥だらけのテディベア。……あの子が、いつも抱いていたものだ。" },
+            
+            // 3. 箱（運転席の人影のあたりに仮定）- 物語の鍵
+            { id: 'box', x: 450, y: 550, r: 100, text: "運転席のシートに、何かが埋もれている。見覚えのない小さな黒い箱だ。……4桁の数字を求めている。" },
+            
+            // 4. ルームミラー（上部中央）
+            { id: 'mirror', x: 540, y: 350, r: 60, text: "ルームミラー。映るはずの誰かの顔は、もうない。" }
         ];
 
+        // ゲーム開始処理
         function handleStart() {
             const s1 = document.getElementById('screen1');
             const s2 = document.getElementById('screen2');
@@ -86,50 +112,102 @@
             }
         }
 
+        // ゲーム初期化
         function initGame() {
-            canvas.width = window.innerWidth * window.devicePixelRatio;
-            canvas.height = window.innerHeight * window.devicePixelRatio;
+            // Canvasを高解像度対応
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            img.onload = draw; // 画像読み込み後に描画
+            draw(); // 初回描画
+            
+            // 最初のメッセージ表示
+            setTimeout(() => { msgDiv.style.opacity = 1; }, 500);
+        }
+
+        function resizeCanvas() {
+            dpr = window.devicePixelRatio;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
             canvas.style.width = window.innerWidth + 'px';
             canvas.style.height = window.innerHeight + 'px';
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            img.onload = draw;
+            ctx.scale(dpr, dpr);
             draw();
-            setTimeout(() => { msg.style.opacity = 1; }, 500);
         }
 
+        // 描画関数（背景画像＋暗いフィルター）
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const dpr = window.devicePixelRatio;
-            // 画像を少し上にずらして描画（ロゴ回避）
-            const offsetY = -50 * dpr; 
-            ctx.drawImage(img, 0, offsetY / dpr, window.innerWidth, (canvas.height - offsetY) / dpr);
             
-            // 暗いフィルター
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+            if (img.complete) {
+                // 画像をCanvasの中央に、画面いっぱいに描画（縦横比維持）
+                const iw = img.width;
+                const ih = img.height;
+                const cw = window.innerWidth;
+                const ch = window.innerHeight;
+                const iRatio = iw / ih;
+                const cRatio = cw / ch;
+                
+                let drawW, drawH, offsetX, offsetY;
+                if (cRatio > iRatio) {
+                    drawW = cw;
+                    drawH = cw / iRatio;
+                    offsetX = 0;
+                    offsetY = (ch - drawH) / 2;
+                } else {
+                    drawW = ch * iRatio;
+                    drawH = ch;
+                    offsetX = (cw - drawW) / 2;
+                    offsetY = 0;
+                }
+                
+                // 画像を描画
+                ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+                
+                // 事故後の暗い雰囲気を出すための黒い半透明フィルター
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(0, 0, cw, ch);
+            }
         }
 
+        // メッセージ表示関数
         function showMsg(text) { 
-            msg.style.opacity = 0; 
-            setTimeout(() => { msg.innerHTML = text; msg.style.opacity = 1; }, 500); 
+            msgDiv.style.opacity = 0; 
+            setTimeout(() => { 
+                msgDiv.innerHTML = text; 
+                msgDiv.style.opacity = 1; 
+            }, 500); 
         }
 
+        // タップイベント処理
         canvas.addEventListener('touchstart', (e) => {
             if (gameClear) return;
-            const tx = e.touches[0].clientX * window.devicePixelRatio;
-            const ty = e.touches[0].clientY * window.devicePixelRatio;
+            
+            // タップ座標を補正
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const tx = touch.clientX;
+            const ty = touch.clientY;
 
+            // タップ位置がアイテムの円内か判定
             items.forEach(item => {
-                if (Math.hypot(item.x - tx, item.y - ty) < item.r + 20) {
+                // タップ判定エリア（画面上のCSSピクセル値を使用）
+                const dist = Math.sqrt((item.x / dpr - tx)**2 + (item.y / dpr - ty)**2);
+                
+                // タップ判定（各アイテムの半径rを使用）
+                if (dist < item.r / dpr) {
                     if (item.id === 'box') {
+                        // 箱をタップした場合のギミック
                         let input = prompt("4桁の数字を入力してください");
                         if (input === "1204") {
-                            showMsg("12月4日……僕たちが家族になった日。<br>僕だけで済んだんだ。");
+                            showMsg("12月4日……。<br>あの日、助手席で笑っていた君の誕生日。<br>……僕だけが、生き残ってしまった。");
                             gameClear = true;
+                            // 必要であればここで背景を変えるなどの処理を追加
                         } else {
                             showMsg("……違う。もっと大切な日付だったはずだ。");
                         }
                     } else {
+                        // 通常のアイテムのメッセージ表示
                         showMsg(item.text);
                     }
                 }
