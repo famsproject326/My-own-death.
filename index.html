@@ -34,7 +34,7 @@
         img.src = 'IMG_4790.PNG'; 
 
         let collectedMemos = [];
-        let inventory = []; // 所持品リスト
+        let inventory = [];
 
         function showMemoList() {
             uiOverlay.style.display = 'block';
@@ -50,11 +50,13 @@
         function closeOverlay() { uiOverlay.style.display = 'none'; }
 
         const items = [
+            { id: 'gloves', x: 520, y: 700, r: 50, title: "軍手", body: "汚れた軍手。手を保護できそうだ。" },
             { id: 'glass', x: 400, y: 800, r: 50, title: "ガラス片" },
             { id: 'toy', x: 780, y: 750, r: 100, title: "テディベア" },
             { id: 'box', x: 520, y: 550, r: 80, isBox: true },
             { id: 'phone', x: 200, y: 850, r: 80, title: "スマホ", body: "画面の時刻は『04』時で止まっている。" },
-            { id: 'ring', x: 200, y: 720, r: 50, title: "指輪", body: "内側に『1204』とある。" }
+            { id: 'ring', x: 200, y: 720, r: 50, title: "指輪", body: "内側に『1204』とある。" },
+            { id: 'shadow', x: 380, y: 500, r: 100, isShadow: true }
         ];
 
         canvas.addEventListener('touchstart', (e) => {
@@ -64,15 +66,22 @@
 
             items.forEach(item => {
                 if (Math.hypot(item.x - tx, item.y - ty) < item.r) {
-                    // ガラス片を入手
-                    if (item.id === 'glass') {
-                        if (!inventory.includes('glass')) {
-                            inventory.push('glass');
-                            msgDiv.innerText = "ガラス片を拾った。鋭い…何かを切るのに使えそうだ。";
+                    
+                    if (item.id === 'gloves') {
+                        if (!inventory.includes('gloves')) {
+                            inventory.push('gloves');
+                            msgDiv.innerText = "軍手を手に入れた。";
                         }
-                    } 
-                    // テディベアを加工
-                    else if (item.id === 'toy') {
+                    } else if (item.id === 'glass') {
+                        if (inventory.includes('gloves')) {
+                            if (!inventory.includes('glass')) {
+                                inventory.push('glass');
+                                msgDiv.innerText = "軍手をしてガラス片を拾った。";
+                            }
+                        } else {
+                            msgDiv.innerText = "素手では危ない。何かで保護しないと…";
+                        }
+                    } else if (item.id === 'toy') {
                         if (inventory.includes('glass')) {
                             if (!collectedMemos.find(m => m.title === "古い手紙")) {
                                 collectedMemos.push({ title: "古い手紙", body: "『ヒロへ。産まれてきてくれてありがとう。体重2983gの宝物。』" });
@@ -81,11 +90,11 @@
                         } else {
                             msgDiv.innerText = "テディベア。タグが付いている。何かで切れば開けそうだ。";
                         }
-                    } 
-                    // 箱の判定など
-                    else if (item.isBox) {
+                    } else if (item.isBox) {
                         let input = prompt("4桁の数字を入力");
                         if (input === "1204") { msgDiv.innerText = "箱が開いた。……あなたは死にました。"; }
+                    } else if (item.isShadow) {
+                        msgDiv.innerText = "僕は死んだんだ…事故に遭ったんだ。";
                     } else {
                         if (!collectedMemos.find(m => m.title === item.title)) {
                             collectedMemos.push({ title: item.title, body: item.body || "" });
