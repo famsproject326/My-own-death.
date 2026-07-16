@@ -6,24 +6,17 @@
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: serif; overflow: hidden; }
         
-        #game-ui { display: none; position: relative; width: 100vw; height: 100vh; }
+        #game-ui { position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; width: 100vw; height: 100vh; }
+        #msg { position: absolute; top: 50px; width: 80%; left: 10%; text-align: center; font-size: 1.1rem; z-index: 6; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; pointer-events: none; transition: opacity 0.5s; }
         
-        #msg { position: absolute; top: 50px; width: 80%; left: 10%; text-align: center; font-size: 1.2rem; z-index: 6; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; pointer-events: none; transition: opacity 0.5s; }
-        
-        /* ★右下のメモボタン */
-        #memo-btn { 
-            position: absolute; bottom: 30px; right: 20px; 
-            width: 60px; height: 60px; background: rgba(255,255,255,0.1); 
-            border: 1px solid #fff; border-radius: 50%; 
-            display: flex; justify-content: center; align-items: center; 
-            font-size: 0.8rem; z-index: 10; cursor: pointer;
-        }
+        #memo-btn { position: absolute; bottom: 30px; right: 20px; width: 60px; height: 60px; background: rgba(255,255,255,0.1); border: 1px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; z-index: 10; cursor: pointer; backdrop-filter: blur(5px); }
     </style>
 </head>
 <body>
 
-    <div id="game-ui" style="display: block;"> <div id="msg">何が起きたんだ……？</div>
+    <div id="game-ui">
+        <div id="msg">……何が起きたんだ？</div>
         <canvas id="canvas"></canvas>
         <div id="memo-btn" onclick="openMemo()">記憶</div>
     </div>
@@ -32,18 +25,53 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const msgDiv = document.getElementById('msg');
-        
-        // 記憶のリスト
-        let collectedNotes = ["まだ何も思い出せない..."];
+        const img = new Image();
+        img.src = 'IMG_4790.PNG'; 
+
+        let collectedNotes = [];
+        let shadowTapCount = 0;
+
+        const items = [
+            { id: 'toy', x: 780, y: 750, r: 100, note: "テディベアのタグに『2983』とある。" },
+            { id: 'box', x: 520, y: 550, r: 80, text: "黒い箱。4桁の数字を求めている。" },
+            { id: 'phone', x: 200, y: 850, r: 80, note: "スマホの時刻は『04』時で止まっている。" },
+            { id: 'ring', x: 200, y: 720, r: 50, note: "指輪の内側に『1204』とある。" },
+            { id: 'shadow', x: 380, y: 500, r: 100 }
+        ];
 
         function openMemo() {
-            msgDiv.innerText = "【記憶の断片】\n" + collectedNotes.join("\n");
+            msgDiv.innerText = collectedNotes.length > 0 ? "【記憶の断片】\n" + collectedNotes.join("\n") : "まだ何も思い出せない。";
             msgDiv.style.opacity = 1;
         }
 
-        // ここに以前のcanvas描画やタッチイベントを追加
-        // ぬいぐるみを調べた時に collectedNotes.push("307という数字を見た") とすれば、
-        // 記憶ボタンを押した時にそれが表示されるようになります
+        // 初期化と描画（省略していますが前回のコードを流用してください）
+        // ... (handleStart, setupCanvas, draw関数)
+
+        canvas.addEventListener('touchstart', (e) => {
+            // 座標計算
+            const rect = canvas.getBoundingClientRect();
+            const tx = ((e.touches[0].clientX - rect.left) / rect.width) * 1000;
+            const ty = ((e.touches[0].clientY - rect.top) / rect.height) * 1000;
+
+            items.forEach(item => {
+                if (Math.hypot(item.x - tx, item.y - ty) < item.r) {
+                    if (item.id === 'box') {
+                        let input = prompt("4桁の数字を入力");
+                        if (input === "1204") { 
+                            msgDiv.innerText = "箱が開いた。……あなたは死にました。さあ、静寂を受け入れなさい。"; 
+                        } else { msgDiv.innerText = "……違う。"; }
+                    } else if (item.id === 'shadow') {
+                        shadowTapCount++;
+                        msgDiv.innerText = (shadowTapCount === 1) ? "僕は死んだんだ。" : "事故に遭ったんだ。";
+                    } else {
+                        // メモに未登録なら追加
+                        if (!collectedNotes.includes(item.note)) collectedNotes.push(item.note);
+                        msgDiv.innerText = item.note;
+                    }
+                    msgDiv.style.opacity = 1;
+                }
+            });
+        });
     </script>
 </body>
 </html>
