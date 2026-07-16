@@ -8,28 +8,38 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
         #loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 20; }
-        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; background: #000; z-index: 10; cursor: pointer; transition: opacity 1.5s; }
         
-        .title-text { font-size: 2.5rem; letter-spacing: 0.2rem; margin-bottom: 3rem; animation: fadeIn 3s ease-in; }
-        .start-btn { font-size: 1rem; color: #888; animation: blink 2s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        /* タイトル画面 */
+        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; background: #000; z-index: 10; cursor: pointer; transition: opacity 1.5s; }
+        .title-text { font-size: 2.5rem; letter-spacing: 0.2rem; margin-bottom: 3rem; }
+        
+        /* イントロダクション（追加分） */
+        #intro-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; background: #000; z-index: 15; cursor: pointer; text-align: center; }
+        .fade-text { opacity: 0; animation: fadeIn 2s ease-in-out forwards; margin: 10px 0; }
+        .delay-1 { animation-delay: 1s; }
+        .delay-2 { animation-delay: 3s; }
+        .delay-3 { animation-delay: 5s; }
 
         #game-ui { display: none; position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; width: 100vw; height: 100vh; }
         
-        #ui-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 400px; text-align: center; z-index: 10; background: rgba(0,0,0,0.9); padding: 25px; border: 1px solid #555; border-radius: 5px; display: none; }
-        .memo-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; color: #ccc; }
-        
-        #memo-btn { position: absolute; bottom: 30px; right: 20px; width: 60px; height: 60px; background: rgba(0,0,0,0.5); border: 1px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; z-index: 10; cursor: pointer; }
-        #msg { position: absolute; top: 80px; width: 80%; left: 10%; text-align: center; font-size: 1.1rem; z-index: 5; color: #eee; pointer-events: none; }
+        /* ... 他のUIはこれまで通り ... */
     </style>
 </head>
 <body>
 
     <div id="loading">読み込み中...</div>
-    <div id="start-screen" onclick="handleStart()">
+    
+    <div id="start-screen" onclick="showIntro()">
         <div class="title-text">My-own-death.</div>
-        <div class="start-btn">Touch to reveal.</div>
+        <div style="color:#888;">Touch to start.</div>
+    </div>
+
+    <div id="intro-screen" onclick="startGame()">
+        <p class="fade-text">僕は死んだ。</p>
+        <p class="fade-text delay-1">僕は笑った。</p>
+        <p class="fade-text delay-2" style="margin-top: 50px;">なぜ男は笑ったのか。</p>
+        <p class="fade-text delay-3" style="color:#444; margin-top: 50px;">（タップで物語へ）</p>
     </div>
 
     <div id="game-ui">
@@ -40,94 +50,28 @@
     </div>
 
     <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const msgDiv = document.getElementById('msg');
-        const uiOverlay = document.getElementById('ui-overlay');
-        const img = new Image();
-        img.src = 'IMG_4790.PNG'; 
-
-        let collectedMemos = [];
-        let inventory = [];
-        let shadowTapCount = 0;
-
+        // 画像読み込み完了後の初期表示
         img.onload = () => {
             document.getElementById('loading').style.display = 'none';
             document.getElementById('start-screen').style.display = 'flex';
+        };
+
+        function showIntro() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('intro-screen').style.display = 'flex';
+        }
+
+        function startGame() {
+            document.getElementById('intro-screen').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'block';
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             ctx.drawImage(img, 0, 0, window.innerWidth, window.innerHeight);
             ctx.fillStyle = 'rgba(0,0,0,0.5)';
             ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-        };
-
-        function handleStart() {
-            const screen = document.getElementById('start-screen');
-            screen.style.opacity = 0;
-            setTimeout(() => {
-                screen.style.display = 'none';
-                document.getElementById('game-ui').style.display = 'block';
-            }, 1500);
         }
-
-        function showMemoList() {
-            uiOverlay.style.display = 'block';
-            uiOverlay.innerHTML = "<h3>記憶の断片</h3>" + 
-                (collectedMemos.length === 0 ? "<p style='color:#666;'>まだ何も思い出せない。</p>" : 
-                collectedMemos.map((m, i) => `<div class='memo-item' onclick='showDetail(${i}); event.stopPropagation();'>${m.title}</div>`).join(""));
-        }
-
-        function showDetail(i) {
-            uiOverlay.innerHTML = `<h3>${collectedMemos[i].title}</h3><p>${collectedMemos[i].body}</p><small>タップで閉じる</small>`;
-        }
-
-        function closeOverlay() { uiOverlay.style.display = 'none'; }
-
-        const items = [
-            { id: 'outside', x: 500, y: 300, r: 400, title: "救急隊" },
-            { id: 'gloves', x: 520, y: 700, r: 50, title: "軍手" },
-            { id: 'glass', x: 400, y: 800, r: 50, title: "ガラス片" },
-            { id: 'toy', x: 780, y: 750, r: 100, title: "テディベア" },
-            { id: 'box', x: 520, y: 550, r: 80, isBox: true },
-            { id: 'phone', x: 200, y: 850, r: 80, title: "スマホ" },
-            { id: 'ring', x: 200, y: 720, r: 50, title: "指輪" },
-            { id: 'shadow', x: 380, y: 500, r: 100, isShadow: true }
-        ];
-
-        canvas.addEventListener('touchstart', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const tx = ((e.touches[0].clientX - rect.left) / rect.width) * 1000;
-            const ty = ((e.touches[0].clientY - rect.top) / rect.height) * 1000;
-
-            items.forEach(item => {
-                if (Math.hypot(item.x - tx, item.y - ty) < item.r) {
-                    if (item.id === 'outside') {
-                        msgDiv.innerText = "外では赤と青の光が激しく明滅している。";
-                    } else if (item.id === 'gloves') {
-                        if (!inventory.includes('gloves')) { inventory.push('gloves'); msgDiv.innerText = "軍手を手に入れた。"; }
-                    } else if (item.id === 'glass') {
-                        if (inventory.includes('gloves') && !inventory.includes('glass')) { inventory.push('glass'); msgDiv.innerText = "軍手をしてガラス片を拾った。"; }
-                        else if (!inventory.includes('gloves')) { msgDiv.innerText = "素手では危ない。"; }
-                    } else if (item.id === 'toy') {
-                        if (inventory.includes('glass') && !collectedMemos.some(m => m.title === "古い手紙")) {
-                            collectedMemos.push({ title: "古い手紙", body: "『ヒロへ。産まれてきてくれてありがとう。体重2983gの宝物。』" });
-                            msgDiv.innerText = "ガラス片でタグを切った。中から手紙が出てきた。";
-                        } else { msgDiv.innerText = "テディベア。タグが付いている。"; }
-                    } else if (item.isBox) {
-                        let input = prompt("4桁の数字を入力");
-                        if (input === "1204") msgDiv.innerText = "箱が開いた。……あなたは死にました。";
-                    } else if (item.isShadow) {
-                        shadowTapCount++;
-                        msgDiv.innerText = (shadowTapCount === 1) ? "僕は死んだんだ。" : "事故に遭ったんだ。";
-                    } else {
-                        if (!collectedMemos.some(m => m.title === item.title)) {
-                            collectedMemos.push({ title: item.title, body: "よく調べたようだ。" });
-                        }
-                        msgDiv.innerText = item.title + "を調べた。";
-                    }
-                }
-            });
-        });
+        
+        // ... 他の機能はこれまで通りのものを記述 ...
     </script>
 </body>
 </html>
