@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
+        body { margin: 0; background: #000; color: #fff; font-family: serif; overflow: hidden; }
         #game-ui { position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; width: 100vw; height: 100vh; }
-        #msg { position: absolute; bottom: 80px; width: 80%; left: 10%; text-align: center; font-size: 1.1rem; z-index: 6; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; pointer-events: none; transition: opacity 0.3s; }
+        #msg { position: absolute; bottom: 80px; width: 80%; left: 10%; text-align: center; font-size: 1.2rem; z-index: 6; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; transition: opacity 0.5s; }
     </style>
 </head>
 <body>
@@ -24,15 +24,16 @@
         const img = new Image();
         img.src = 'IMG_4790.PNG'; 
 
-        const DEBUG = true; // 位置調整が終わったら false にしてください
+        const DEBUG = true; // 位置調整が終わったら false に
+        let gameState = "normal"; // normal, reading_letter, end
+        let letterStep = 0;
 
         const items = [
-            { id: 'outside', x: 500, y: 300, r: 400, text: "救急隊の光が激しく明滅している。" },
-            { id: 'toy', x: 780, y: 750, r: 100, text: "泥だらけのテディベア。タグに『307』という文字が見える。" },
+            { id: 'outside', x: 500, y: 300, r: 400, text: "外では赤と青の光が明滅している。" },
+            { id: 'toy', x: 780, y: 750, r: 100, text: "テディベア。タグに『307』と書かれている。" },
             { id: 'box', x: 520, y: 550, r: 80, text: "黒い箱。4桁の数字を求めている。" },
-            { id: 'phone', x: 200, y: 850, r: 80, text: "割れたスマホ。画面の時刻は『04』時で止まっている。" },
-            { id: 'ring', x: 200, y: 720, r: 50, text: "スマホのすぐ近くに落ちている指輪。内側には『1204』と刻印されている。" },
-            { id: 'mirror', x: 550, y: 280, r: 50, text: "ルームミラー。何も映らない。" }
+            { id: 'phone', x: 200, y: 850, r: 80, text: "割れたスマホ。時刻は『04』時で止まっている。" },
+            { id: 'ring', x: 200, y: 720, r: 50, text: "指輪。内側に『1204』と刻印されている。" }
         ];
 
         img.onload = () => {
@@ -58,6 +59,13 @@
         }
 
         canvas.addEventListener('touchstart', (e) => {
+            if (gameState === "reading_letter") {
+                letterStep++;
+                showLetter();
+                return;
+            }
+            if (gameState === "end") return;
+
             const tx = (e.touches[0].clientX / canvas.width) * 1000;
             const ty = (e.touches[0].clientY / canvas.height) * 1000;
 
@@ -65,8 +73,12 @@
                 if (Math.hypot(item.x - tx, item.y - ty) < item.r) {
                     if (item.id === 'box') {
                         let input = prompt("4桁の数字を入力");
-                        if (input === "1204") { msgDiv.innerText = "箱が開いた。中には君からの手紙が入っていた。"; }
-                        else { msgDiv.innerText = "番号が違うようだ……。"; }
+                        if (input === "1204") {
+                            gameState = "reading_letter";
+                            showLetter();
+                        } else {
+                            msgDiv.innerText = "……違う。もっと大切な日付だったはずだ。";
+                        }
                     } else {
                         msgDiv.innerText = item.text;
                     }
@@ -74,6 +86,22 @@
                 }
             });
         });
+
+        function showLetter() {
+            const steps = [
+                "箱の中には、古ぼけた手紙が一枚入っていた。",
+                "『あなたは死にました。』",
+                "『これは救済でも裁きでもない。ただの確定した事実です。』",
+                "『さあ、静寂を受け入れなさい。』",
+                "【真実のエンディング：終焉】"
+            ];
+            if (letterStep < steps.length) {
+                msgDiv.innerText = steps[letterStep];
+            } else {
+                gameState = "end";
+                msgDiv.innerText = "画面を閉じると、永遠が始まります。";
+            }
+        }
     </script>
 </body>
 </html>
