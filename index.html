@@ -9,7 +9,6 @@
         #game-ui { position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; width: 100vw; height: 100vh; }
         
-        /* 記憶ウインドウを画面中央に配置 */
         #ui-overlay { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 80%; max-width: 400px;
@@ -21,15 +20,7 @@
         .memo-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; color: #ccc; }
         .memo-item:active { background: rgba(255,255,255,0.1); }
         
-        /* 記憶ボタンのデザイン */
-        #memo-btn { 
-            position: absolute; bottom: 30px; right: 20px; width: 60px; height: 60px; 
-            background: rgba(0,0,0,0.5); border: 1px solid #fff; border-radius: 50%; 
-            display: flex; justify-content: center; align-items: center; 
-            font-size: 0.9rem; z-index: 10; cursor: pointer;
-        }
-        
-        /* メッセージ表示エリア（ゲーム内表示） */
+        #memo-btn { position: absolute; bottom: 30px; right: 20px; width: 60px; height: 60px; background: rgba(0,0,0,0.5); border: 1px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; z-index: 10; cursor: pointer; }
         #msg { position: absolute; top: 80px; width: 80%; left: 10%; text-align: center; font-size: 1.1rem; z-index: 5; color: #eee; pointer-events: none; }
     </style>
 </head>
@@ -51,8 +42,8 @@
         img.src = 'IMG_4790.PNG'; 
 
         let collectedMemos = [];
+        let shadowTapCount = 0;
 
-        // UI表示用の関数
         function showMemoList() {
             uiOverlay.style.display = 'block';
             uiOverlay.innerHTML = "<h3>記憶の断片</h3>" + 
@@ -66,12 +57,13 @@
 
         function closeOverlay() { uiOverlay.style.display = 'none'; }
 
-        // アイテム判定等は省略しますが、アラートの代わりにmsgDivを使うとゲーム内表示になります
         const items = [
+            { id: 'outside', x: 500, y: 300, r: 400, title: "救急隊", body: "外では赤と青の光が激しく明滅している。隊員たちが必死に動いている。" },
             { id: 'toy', x: 780, y: 750, r: 100, title: "テディベア", body: "タグに『2983』と刻まれている。" },
             { id: 'box', x: 520, y: 550, r: 80, isBox: true },
             { id: 'phone', x: 200, y: 850, r: 80, title: "スマホ", body: "画面の時刻は『04』時で止まっている。" },
-            { id: 'ring', x: 200, y: 720, r: 50, title: "指輪", body: "内側に『1204』とある。" }
+            { id: 'ring', x: 200, y: 720, r: 50, title: "指輪", body: "内側に『1204』とある。" },
+            { id: 'shadow', x: 380, y: 500, r: 100, isShadow: true }
         ];
 
         canvas.addEventListener('touchstart', (e) => {
@@ -84,6 +76,9 @@
                     if (item.isBox) {
                         let input = prompt("4桁の数字を入力");
                         if (input === "1204") { msgDiv.innerText = "箱が開いた。……あなたは死にました。"; }
+                    } else if (item.isShadow) {
+                        shadowTapCount++;
+                        msgDiv.innerText = (shadowTapCount === 1) ? "僕は死んだんだ。" : "事故に遭ったんだ。";
                     } else {
                         if (!collectedMemos.find(m => m.title === item.title)) {
                             collectedMemos.push({ title: item.title, body: item.body });
@@ -94,7 +89,6 @@
             });
         });
 
-        // 描画初期化
         img.onload = () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
