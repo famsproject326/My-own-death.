@@ -5,109 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: serif; overflow: hidden; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        #loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 20; }
-        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; background: #000; z-index: 10; cursor: pointer; }
-        
-        .fade-text { opacity: 0; animation: fadeIn 3s ease-in-out forwards; }
-        .delay-text { opacity: 0; animation: fadeIn 3s ease-in-out forwards; animation-delay: 3s; }
-
-        #game-ui { display: none; position: relative; width: 100vw; height: 100vh; }
+        #game-ui { position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; width: 100vw; height: 100vh; }
-        #msg { position: absolute; top: 50px; width: 80%; left: 10%; text-align: center; font-size: 1.2rem; z-index: 6; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; pointer-events: none; transition: opacity 0.5s; }
         
-        #memo-btn { position: absolute; bottom: 30px; right: 20px; width: 60px; height: 60px; background: rgba(255,255,255,0.1); border: 1px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; z-index: 10; cursor: pointer; backdrop-filter: blur(5px); }
+        /* メッセージ＆メモ表示用UI */
+        #ui-overlay { 
+            position: absolute; top: 50px; width: 80%; left: 10%; 
+            text-align: center; font-size: 1.1rem; z-index: 6; 
+            background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; 
+            display: none; transition: opacity 0.5s;
+        }
+        .memo-item { padding: 10px; border-bottom: 1px solid #444; cursor: pointer; color: #aaa; }
+        .memo-item:hover { color: #fff; }
+        
+        #memo-btn { position: absolute; bottom: 30px; right: 20px; width: 60px; height: 60px; background: rgba(255,255,255,0.1); border: 1px solid #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; z-index: 10; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="loading">読み込み中...</div>
-    <div id="start-screen" onclick="handleStart()">
-        <p class="fade-text" style="font-size: 1.5rem; margin-bottom: 20px;">僕は死んだ。</p>
-        <p class="delay-text" style="font-size: 1.5rem;">僕は笑った。</p>
-        <p style="margin-top: 50px; color: #555; font-size: 0.9rem;">（タップして物語へ）</p>
-    </div>
-
     <div id="game-ui">
-        <div id="msg">何が起きたんだ……？</div>
         <canvas id="canvas"></canvas>
-        <div id="memo-btn" onclick="openMemo()">記憶</div>
+        <div id="ui-overlay" onclick="closeOverlay()"></div>
+        <div id="memo-btn" onclick="showMemoList()">記憶</div>
     </div>
 
     <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const msgDiv = document.getElementById('msg');
-        const img = new Image();
-        img.src = 'IMG_4790.PNG'; 
-
-        let collectedNotes = [];
-        let shadowTapCount = 0;
-
-        img.onload = () => {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('start-screen').style.display = 'flex';
-            setupCanvas();
-        };
-
-        function setupCanvas() {
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = window.innerWidth * dpr;
-            canvas.height = window.innerHeight * dpr;
-            ctx.scale(dpr, dpr);
-            draw();
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, window.innerWidth, window.innerHeight);
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-        }
-
-        function handleStart() {
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'block';
-        }
-
-        function openMemo() {
-            msgDiv.innerText = collectedNotes.length > 0 ? "【記憶の断片】\n" + collectedNotes.join("\n") : "まだ何も思い出せない。";
-            msgDiv.style.opacity = 1;
-        }
-
-        const items = [
-            { id: 'outside', x: 500, y: 300, r: 400, note: "隊員たちが忙しそうに動いている。" },
-            { id: 'toy', x: 780, y: 750, r: 100, note: "テディベア。タグに『2983』とある。" },
-            { id: 'box', x: 520, y: 550, r: 80, text: "黒い箱。" },
-            { id: 'phone', x: 200, y: 850, r: 80, note: "スマホの時刻は『04』時で止まっている。" },
-            { id: 'ring', x: 200, y: 720, r: 50, note: "指輪の内側に『1204』と刻印されている。" },
-            { id: 'shadow', x: 380, y: 500, r: 100 }
+        const uiOverlay = document.getElementById('ui-overlay');
+        // メモのデータ構造（タイトルと詳細を分ける）
+        let memos = [
+            { title: "テディベア", body: "あの子がいつも抱いていたテディベア。タグには『2983』と刻まれている。" },
+            { title: "スマホ", body: "ひび割れた画面。時刻は『04』時で止まっている。何があった？" },
+            { title: "指輪", body: "内側に『1204』の刻印。誰の指輪だったのか。" }
         ];
 
-        canvas.addEventListener('touchstart', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const tx = ((e.touches[0].clientX - rect.left) / rect.width) * 1000;
-            const ty = ((e.touches[0].clientY - rect.top) / rect.height) * 1000;
+        // 記憶リストを表示
+        function showMemoList() {
+            uiOverlay.style.display = 'block';
+            uiOverlay.innerHTML = "<h3>記憶の断片</h3>" + 
+                memos.map((m, i) => `<div class="memo-item" onclick="showDetail(${i}); event.stopPropagation();">${m.title}</div>`).join("");
+        }
 
-            items.forEach(item => {
-                if (Math.hypot(item.x - tx, item.y - ty) < item.r) {
-                    if (item.id === 'box') {
-                        let input = prompt("4桁の数字を入力");
-                        if (input === "1204") { 
-                            msgDiv.innerText = "箱が開いた。……あなたは死にました。さあ、静寂を受け入れなさい。"; 
-                        } else { msgDiv.innerText = "……違う。"; }
-                    } else if (item.id === 'shadow') {
-                        shadowTapCount++;
-                        msgDiv.innerText = (shadowTapCount === 1) ? "僕は死んだんだ。" : "事故に遭ったんだ。";
-                    } else {
-                        if (!collectedNotes.includes(item.note)) collectedNotes.push(item.note);
-                        msgDiv.innerText = item.note;
-                    }
-                    msgDiv.style.opacity = 1;
-                }
-            });
-        });
+        // 詳細を表示
+        function showDetail(index) {
+            uiOverlay.innerHTML = `<h3>${memos[index].title}</h3><p>${memos[index].body}</p><small>(タップで閉じる)</small>`;
+        }
+
+        function closeOverlay() {
+            uiOverlay.style.display = 'none';
+        }
+
+        // ... (以下、前回までのCanvas描画やアイテムタップ等のコード)
     </script>
 </body>
 </html>
