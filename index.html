@@ -5,15 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; overflow: hidden; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        #loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 20; }
-        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; background: #000; z-index: 10; cursor: pointer; }
-        
-        .fade-text { opacity: 0; animation: fadeIn 3s ease-in-out forwards; }
-        .delay-text { opacity: 0; animation: fadeIn 3s ease-in-out forwards; animation-delay: 3s; }
-
-        #game-ui { display: none; position: relative; width: 100vw; height: 100vh; }
+        #game-ui { position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; width: 100vw; height: 100vh; }
         
         #ui-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 400px; text-align: center; z-index: 10; background: rgba(0,0,0,0.85); padding: 25px; border: 1px solid #555; border-radius: 5px; display: none; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
@@ -24,13 +17,6 @@
     </style>
 </head>
 <body>
-
-    <div id="loading">読み込み中...</div>
-    <div id="start-screen" onclick="handleStart()">
-        <p class="fade-text" style="font-size: 1.5rem; margin-bottom: 20px;">僕は死んだ。</p>
-        <p class="delay-text" style="font-size: 1.5rem;">僕は笑った。</p>
-        <p style="margin-top: 50px; color: #555; font-size: 0.9rem;">（タップして物語へ）</p>
-    </div>
 
     <div id="game-ui">
         <div id="msg">……何が起きたんだ？</div>
@@ -48,26 +34,7 @@
         img.src = 'IMG_4790.PNG'; 
 
         let collectedMemos = [];
-        let shadowTapCount = 0;
-
-        img.onload = () => {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('start-screen').style.display = 'flex';
-            setupCanvas();
-        };
-
-        function setupCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            ctx.drawImage(img, 0, 0, window.innerWidth, window.innerHeight);
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-        }
-
-        function handleStart() {
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'block';
-        }
+        let inventory = []; // 所持品リスト
 
         function showMemoList() {
             uiOverlay.style.display = 'block';
@@ -83,12 +50,11 @@
         function closeOverlay() { uiOverlay.style.display = 'none'; }
 
         const items = [
-            { id: 'outside', x: 500, y: 300, r: 400, title: "救急隊", body: "外では赤と青の光が激しく明滅している。隊員たちが必死に動いている。" },
-            { id: 'toy', x: 780, y: 750, r: 100, title: "テディベア", body: "タグに『2983』と刻まれている。" },
+            { id: 'glass', x: 400, y: 800, r: 50, title: "ガラス片" },
+            { id: 'toy', x: 780, y: 750, r: 100, title: "テディベア" },
             { id: 'box', x: 520, y: 550, r: 80, isBox: true },
             { id: 'phone', x: 200, y: 850, r: 80, title: "スマホ", body: "画面の時刻は『04』時で止まっている。" },
-            { id: 'ring', x: 200, y: 720, r: 50, title: "指輪", body: "内側に『1204』とある。" },
-            { id: 'shadow', x: 380, y: 500, r: 100, isShadow: true }
+            { id: 'ring', x: 200, y: 720, r: 50, title: "指輪", body: "内側に『1204』とある。" }
         ];
 
         canvas.addEventListener('touchstart', (e) => {
@@ -98,21 +64,45 @@
 
             items.forEach(item => {
                 if (Math.hypot(item.x - tx, item.y - ty) < item.r) {
-                    if (item.isBox) {
+                    // ガラス片を入手
+                    if (item.id === 'glass') {
+                        if (!inventory.includes('glass')) {
+                            inventory.push('glass');
+                            msgDiv.innerText = "ガラス片を拾った。鋭い…何かを切るのに使えそうだ。";
+                        }
+                    } 
+                    // テディベアを加工
+                    else if (item.id === 'toy') {
+                        if (inventory.includes('glass')) {
+                            if (!collectedMemos.find(m => m.title === "古い手紙")) {
+                                collectedMemos.push({ title: "古い手紙", body: "『ヒロへ。産まれてきてくれてありがとう。体重2983gの宝物。』" });
+                                msgDiv.innerText = "ガラス片でタグを切った。中から手紙が出てきた。";
+                            }
+                        } else {
+                            msgDiv.innerText = "テディベア。タグが付いている。何かで切れば開けそうだ。";
+                        }
+                    } 
+                    // 箱の判定など
+                    else if (item.isBox) {
                         let input = prompt("4桁の数字を入力");
                         if (input === "1204") { msgDiv.innerText = "箱が開いた。……あなたは死にました。"; }
-                    } else if (item.isShadow) {
-                        shadowTapCount++;
-                        msgDiv.innerText = (shadowTapCount === 1) ? "僕は死んだんだ。" : "事故に遭ったんだ。";
                     } else {
                         if (!collectedMemos.find(m => m.title === item.title)) {
-                            collectedMemos.push({ title: item.title, body: item.body });
+                            collectedMemos.push({ title: item.title, body: item.body || "" });
                         }
                         msgDiv.innerText = item.title + "を調べた...";
                     }
                 }
             });
         });
+
+        img.onload = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.drawImage(img, 0, 0, window.innerWidth, window.innerHeight);
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+        };
     </script>
 </body>
 </html>
