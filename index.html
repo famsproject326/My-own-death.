@@ -5,31 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: serif; overflow: hidden; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-        
-        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000; z-index: 10; cursor: pointer; }
-        .fade-text { opacity: 0; animation: fadeIn 2s ease-in-out forwards; }
-        #tap-to-start { margin-top: 50px; animation: blink 2s ease-in-out infinite; font-size: 0.9rem; color: #888; }
-        
+        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000; z-index: 10; }
         #game-ui { display: none; position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; width: 100vw; height: 100vh; }
-        #msg { position: absolute; bottom: 80px; width: 80%; left: 10%; text-align: center; font-size: 1.2rem; z-index: 6; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; transition: opacity 0.5s; pointer-events: none; }
+        #msg { position: absolute; bottom: 80px; width: 80%; left: 10%; text-align: center; font-size: 1.2rem; z-index: 6; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; pointer-events: none; }
     </style>
 </head>
 <body>
-
-    <div id="start-screen" onclick="handleStart()">
-        <div id="screen1">
-            <p class="fade-text" style="font-size: 1.5rem;">僕は死んだ。</p>
-            <p class="fade-text" style="font-size: 1.5rem; animation-delay: 2s;">僕は笑った。</p>
-        </div>
-        <div id="screen2" style="display: none;">
-            <p style="font-size: 1.2rem;">なぜ、男は笑ったのか。</p>
-            <p id="tap-to-start">タップして開始</p>
-        </div>
-    </div>
-
+    <div id="start-screen" onclick="handleStart()">タップして開始</div>
     <div id="game-ui">
         <div id="msg">……何が起きたんだ？</div>
         <canvas id="canvas"></canvas>
@@ -40,11 +23,8 @@
         const ctx = canvas.getContext('2d');
         const msgDiv = document.getElementById('msg');
         const img = new Image();
-        img.src = 'IMG_4790.PNG'; 
-
-        const DEBUG = false; // デバッグモードを解除しました
-        let gameState = "normal"; 
-        let letterStep = 0;
+        // ★ここを念のため小文字にしました
+        img.src = 'img_4790.png'; 
 
         const items = [
             { id: 'outside', x: 500, y: 300, r: 400, text: "外では赤と青の光が激しく明滅している。" },
@@ -55,17 +35,15 @@
         ];
 
         function handleStart() {
-            const s1 = document.getElementById('screen1');
-            const s2 = document.getElementById('screen2');
-            if (s1.style.display !== 'none') {
-                s1.style.display = 'none';
-                s2.style.display = 'block';
-            } else {
-                document.getElementById('start-screen').style.display = 'none';
-                document.getElementById('game-ui').style.display = 'block';
-                img.onload = draw;
-                draw();
-            }
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'block';
+            
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            // 画像描画を確実に実行
+            img.onload = () => { draw(); };
+            draw();
         }
 
         function draw() {
@@ -76,49 +54,22 @@
         }
 
         canvas.addEventListener('touchstart', (e) => {
-            if (gameState === "reading_letter") {
-                letterStep++;
-                showLetter();
-                return;
-            }
-            if (gameState === "end") return;
-
-            const tx = (e.touches[0].clientX / canvas.width) * 1000;
-            const ty = (e.touches[0].clientY / canvas.height) * 1000;
+            const rect = canvas.getBoundingClientRect();
+            const tx = ((e.touches[0].clientX - rect.left) / rect.width) * 1000;
+            const ty = ((e.touches[0].clientY - rect.top) / rect.height) * 1000;
 
             items.forEach(item => {
                 if (Math.hypot(item.x - tx, item.y - ty) < item.r) {
                     if (item.id === 'box') {
                         let input = prompt("4桁の数字を入力");
-                        if (input === "1204") {
-                            gameState = "reading_letter";
-                            showLetter();
-                        } else {
-                            msgDiv.innerText = "……違う。もっと大切な日付だったはずだ。";
-                        }
+                        if (input === "1204") { msgDiv.innerText = "箱が開いた。……あなたは死にました。さあ、静寂を受け入れなさい。"; }
+                        else { msgDiv.innerText = "……違う。"; }
                     } else {
                         msgDiv.innerText = item.text;
                     }
-                    msgDiv.style.opacity = 1;
                 }
             });
         });
-
-        function showLetter() {
-            const steps = [
-                "箱の中には、古ぼけた手紙が一枚入っていた。",
-                "『あなたは死にました。』",
-                "『これは救済でも裁きでもない。ただの確定した事実です。』",
-                "『さあ、静寂を受け入れなさい。』",
-                "【真実のエンディング：終焉】"
-            ];
-            if (letterStep < steps.length) {
-                msgDiv.innerText = steps[letterStep];
-            } else {
-                gameState = "end";
-                msgDiv.innerText = "画面を閉じると、永遠が始まります。";
-            }
-        }
     </script>
 </body>
 </html>
