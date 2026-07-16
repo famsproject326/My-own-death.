@@ -4,77 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { margin: 0; background: #050505; color: white; font-family: 'Courier New', monospace; overflow: hidden; }
-        #canvas { display: block; width: 100vw; height: 100vh; }
-        #text { position: absolute; top: 10%; width: 100%; text-align: center; pointer-events: none; font-size: 18px; line-height: 1.5; padding: 0 20px; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; overflow: hidden; }
+        canvas { display: block; }
+        #msg { 
+            position: absolute; bottom: 15%; width: 80%; left: 10%; 
+            text-align: center; font-size: 1.2rem; line-height: 1.8;
+            opacity: 0; transition: opacity 1s; pointer-events: none;
+            text-shadow: 0 0 10px #000;
+        }
     </style>
 </head>
 <body>
-    <div id="text"></div>
+    <div id="msg">静かな夜。車内には、僕ひとり。</div>
     <canvas id="canvas"></canvas>
 
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const textDiv = document.getElementById('text');
+        const msg = document.getElementById('msg');
         
-        let foundItems = 0;
-        const totalItems = 3;
-        let isFinished = false;
+        // 高解像度対応
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = window.innerWidth * dpr;
+        canvas.height = window.innerHeight * dpr;
+        canvas.style.width = window.innerWidth + 'px';
+        canvas.style.height = window.innerHeight + 'px';
+        ctx.scale(dpr, dpr);
 
-        // 車内のオブジェクト位置 (x, y, radius, label)
-        const objects = [
-            { x: 100, y: 500, r: 40, label: "スマホ", desc: "画面には家族の写真。楽しそうに笑っている。" },
-            { x: 300, y: 600, r: 40, label: "おもちゃ", desc: "後部座席に落ちていた。子供の温もりが残っている。" },
-            { x: 200, y: 300, r: 50, label: "箱", desc: "不自然に置かれた、見覚えのない箱。" }
+        let foundCount = 0;
+        const items = [
+            { id: 'phone', x: 80, y: 350, r: 40, text: "家族の笑顔が映るスマホ。画面はもう、消えている。" },
+            { id: 'toy', x: 280, y: 400, r: 35, text: "後部座席に転がるぬいぐるみ。子供の温もりだけが、そこにある。" },
+            { id: 'mirror', x: 200, y: 150, r: 30, text: "ルームミラー。映るはずの誰かの影は、もうどこにもない。" },
+            { id: 'belt', x: 120, y: 500, r: 30, text: "引きちぎれたシートベルト。僕を縛り付けていた、最後の枷。" },
+            { id: 'box', x: 200, y: 300, r: 50, text: "……見覚えのない、小さな箱。今、開く時がきたようだ。" }
         ];
 
+        function showMsg(text) {
+            msg.style.opacity = 0;
+            setTimeout(() => {
+                msg.innerHTML = text;
+                msg.style.opacity = 1;
+            }, 1000);
+        }
+
         function draw() {
-            ctx.fillStyle = "#050505";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // 簡易的な車内の描写
-            ctx.strokeStyle = "#333";
-            ctx.lineWidth = 5;
-            objects.forEach((obj, i) => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // ぼんやりした暗い雰囲気
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+
+            items.forEach(item => {
                 ctx.beginPath();
-                ctx.arc(obj.x, obj.y, obj.r, 0, Math.PI * 2);
+                ctx.arc(item.x, item.y, item.r, 0, Math.PI*2);
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 2;
                 ctx.stroke();
-                ctx.fillStyle = "white";
-                ctx.fillText(obj.label, obj.x - 20, obj.y + 5);
             });
         }
 
         canvas.addEventListener('touchstart', (e) => {
-            const touch = e.touches[0];
-            const rect = canvas.getBoundingClientRect();
-            const tx = touch.clientX - rect.left;
-            const ty = touch.clientY - rect.top;
+            const tx = e.touches[0].clientX;
+            const ty = e.touches[0].clientY;
 
-            objects.forEach((obj, i) => {
-                const dist = Math.hypot(obj.x - tx, obj.y - ty);
-                if (dist < obj.r && !isFinished) {
-                    if (obj.label === "箱") {
-                        if (foundItems >= totalItems - 1) {
-                            textDiv.innerHTML = "僕だけで済んだんだ。";
-                            isFinished = true;
+            items.forEach(item => {
+                const dist = Math.hypot(item.x - tx, item.y - ty);
+                if (dist < item.r) {
+                    if (item.id === 'box') {
+                        if (foundCount >= 4) {
+                            showMsg("僕だけで済んだんだ。");
                         } else {
-                            textDiv.innerHTML = "まだ、調べていないものがある。";
+                            showMsg("まだ、過去が残っている気がする。");
                         }
                     } else {
-                        textDiv.innerHTML = obj.desc;
-                        if (!obj.found) { obj.found = true; foundItems++; }
+                        if (msg.innerHTML !== item.text) {
+                            showMsg(item.text);
+                            foundCount++;
+                        }
                     }
                 }
             });
         });
 
-        window.onload = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            textDiv.innerHTML = "静かな車内。<br>家族の気配を探そう。";
-            draw();
-        };
+        window.onload = () => { draw(); msg.style.opacity = 1; };
     </script>
 </body>
 </html>
