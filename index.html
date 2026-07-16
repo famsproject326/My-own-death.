@@ -4,31 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { 
-            margin: 0; 
-            background: #000; 
-            color: #fff; 
-            font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; 
-            overflow: hidden; 
-        }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; overflow: hidden; }
         canvas { display: block; }
-        #msg { 
-            position: absolute; 
-            bottom: 20%; 
-            width: 80%; 
-            left: 10%; 
-            text-align: center; 
-            font-size: 1.1rem; 
-            line-height: 2.0;
-            opacity: 0; 
-            transition: opacity 1.5s ease-in-out; 
-            pointer-events: none;
-            text-shadow: 0 0 15px rgba(255,255,255,0.5);
-        }
+        #msg { position: absolute; bottom: 20%; width: 80%; left: 10%; text-align: center; font-size: 1.1rem; opacity: 0; transition: opacity 0.5s; pointer-events: none; text-shadow: 0 0 10px #000; }
     </style>
 </head>
 <body>
-    <div id="msg">静かな夜。車内には、僕ひとり。</div>
+    <div id="msg">車内には、手がかりが落ちているようだ。</div>
     <canvas id="canvas"></canvas>
 
     <script>
@@ -36,7 +18,6 @@
         const ctx = canvas.getContext('2d');
         const msg = document.getElementById('msg');
         
-        // 高解像度設定：ピクセル密度を2倍以上にして精細に描画する
         const dpr = window.devicePixelRatio || 2;
         canvas.width = window.innerWidth * dpr;
         canvas.height = window.innerHeight * dpr;
@@ -44,76 +25,58 @@
         canvas.style.height = window.innerHeight + 'px';
         ctx.scale(dpr, dpr);
 
-        let foundCount = 0;
+        // 状態管理
+        let collectedInfo = { phone: false, toy: false, mirror: false, belt: false };
+        let gameClear = false;
+
         const items = [
-            { id: 'phone', x: 80, y: 350, r: 40, text: "家族の笑顔が映るスマホ。画面はもう、消えている。" },
-            { id: 'toy', x: 280, y: 400, r: 35, text: "後部座席に転がるぬいぐるみ。子供の温もりだけが、そこにある。" },
-            { id: 'mirror', x: 200, y: 150, r: 30, text: "ルームミラー。映るはずの誰かの影は、もうどこにもない。" },
-            { id: 'belt', x: 120, y: 500, r: 30, text: "引きちぎれたシートベルト。僕を縛り付けていた、最後の枷。" },
-            { id: 'box', x: 200, y: 300, r: 50, text: "……見覚えのない、小さな箱。今、開く時がきたようだ。" }
+            { id: 'phone', x: 80, y: 350, r: 40, text: "スマホの画面。通知時間は『12』時で止まっている。" },
+            { id: 'toy', x: 280, y: 400, r: 35, text: "ぬいぐるみのタグに『04』という刺繍がある。" },
+            { id: 'mirror', x: 200, y: 150, r: 30, text: "ミラーには何も映らない。ただの暗闇だ。" },
+            { id: 'belt', x: 120, y: 500, r: 30, text: "ベルトが切れている。激しい衝撃だったようだ。" },
+            { id: 'box', x: 200, y: 300, r: 50, text: "見覚えのない箱。4桁の数字を求めている。" }
         ];
 
-        function showMsg(text) {
-            msg.style.opacity = 0;
-            setTimeout(() => {
-                msg.innerHTML = text;
-                msg.style.opacity = 1;
-            }, 500);
-        }
+        function showMsg(text) { msg.style.opacity = 0; setTimeout(() => { msg.innerHTML = text; msg.style.opacity = 1; }, 500); }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // 背景の漆黒
             ctx.fillStyle = '#050505';
             ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-
-            // 各オブジェクトの描画
             items.forEach(item => {
                 ctx.beginPath();
                 ctx.arc(item.x, item.y, item.r, 0, Math.PI*2);
-                
-                // 線の滑らかさを出すための影設定
-                ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-                ctx.shadowBlur = 15;
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
                 ctx.lineWidth = 3;
                 ctx.stroke();
-                
-                // 影をリセット
-                ctx.shadowBlur = 0;
             });
         }
 
         canvas.addEventListener('touchstart', (e) => {
+            if (gameClear) return;
             const touch = e.touches[0];
-            // 拡大率を考慮した座標計算
             const tx = touch.clientX;
             const ty = touch.clientY;
 
             items.forEach(item => {
-                const dist = Math.hypot(item.x - tx, item.y - ty);
-                if (dist < item.r + 20) { // タップ範囲を少し広めに設定
+                if (Math.hypot(item.x - tx, item.y - ty) < item.r + 20) {
                     if (item.id === 'box') {
-                        if (foundCount >= 4) {
-                            showMsg("僕だけで済んだんだ。");
+                        let input = prompt("4桁の数字を入力してください");
+                        if (input === "1204") {
+                            showMsg("……カチャリ。箱が開いた。<br>僕だけで済んだんだ。");
+                            gameClear = true;
                         } else {
-                            showMsg("まだ、過去が残っている気がする。");
+                            showMsg("正しい数字ではないようだ。");
                         }
                     } else {
-                        if (msg.innerHTML !== item.text) {
-                            showMsg(item.text);
-                            foundCount++;
-                        }
+                        collectedInfo[item.id] = true;
+                        showMsg(item.text);
                     }
                 }
             });
         });
 
-        window.onload = () => { 
-            draw(); 
-            setTimeout(() => { msg.style.opacity = 1; }, 500);
-        };
+        window.onload = () => { draw(); setTimeout(() => { msg.style.opacity = 1; }, 500); };
     </script>
 </body>
 </html>
