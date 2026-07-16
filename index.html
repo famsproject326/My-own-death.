@@ -21,6 +21,7 @@
         #game-ui { display: none; position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; }
         
+        /* ロゴ回避用の黒帯 */
         #footer-cover {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 50px;
             background-color: #000; z-index: 5;
@@ -57,8 +58,11 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const msg = document.getElementById('msg');
+        
+        // ★ここを画像ファイル名に変更しました
         const img = new Image();
-        img.src = 'image_0.png'; // ★ここに実際の画像ファイル名を指定してください
+        img.src = 'IMG_4789.PNG'; 
+        
         let gameClear = false;
 
         const items = [
@@ -96,8 +100,11 @@
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const dpr = window.devicePixelRatio;
+            // 画像を少し上にずらして描画（ロゴ回避）
             const offsetY = -50 * dpr; 
             ctx.drawImage(img, 0, offsetY / dpr, window.innerWidth, (canvas.height - offsetY) / dpr);
+            
+            // 暗いフィルター
             ctx.fillStyle = 'rgba(0,0,0,0.5)';
             ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
         }
