@@ -4,13 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; overflow: hidden; }
+        body { 
+            margin: 0; 
+            background: #000; 
+            color: #fff; 
+            font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; 
+            overflow: hidden; 
+        }
         canvas { display: block; }
         #msg { 
-            position: absolute; bottom: 15%; width: 80%; left: 10%; 
-            text-align: center; font-size: 1.2rem; line-height: 1.8;
-            opacity: 0; transition: opacity 1s; pointer-events: none;
-            text-shadow: 0 0 10px #000;
+            position: absolute; 
+            bottom: 20%; 
+            width: 80%; 
+            left: 10%; 
+            text-align: center; 
+            font-size: 1.1rem; 
+            line-height: 2.0;
+            opacity: 0; 
+            transition: opacity 1.5s ease-in-out; 
+            pointer-events: none;
+            text-shadow: 0 0 15px rgba(255,255,255,0.5);
         }
     </style>
 </head>
@@ -23,8 +36,8 @@
         const ctx = canvas.getContext('2d');
         const msg = document.getElementById('msg');
         
-        // 高解像度対応
-        const dpr = window.devicePixelRatio || 1;
+        // 高解像度設定：ピクセル密度を2倍以上にして精細に描画する
+        const dpr = window.devicePixelRatio || 2;
         canvas.width = window.innerWidth * dpr;
         canvas.height = window.innerHeight * dpr;
         canvas.style.width = window.innerWidth + 'px';
@@ -45,31 +58,42 @@
             setTimeout(() => {
                 msg.innerHTML = text;
                 msg.style.opacity = 1;
-            }, 1000);
+            }, 500);
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // ぼんやりした暗い雰囲気
-            ctx.fillStyle = '#0a0a0a';
+            
+            // 背景の漆黒
+            ctx.fillStyle = '#050505';
             ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
+            // 各オブジェクトの描画
             items.forEach(item => {
                 ctx.beginPath();
                 ctx.arc(item.x, item.y, item.r, 0, Math.PI*2);
-                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-                ctx.lineWidth = 2;
+                
+                // 線の滑らかさを出すための影設定
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+                ctx.shadowBlur = 15;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 3;
                 ctx.stroke();
+                
+                // 影をリセット
+                ctx.shadowBlur = 0;
             });
         }
 
         canvas.addEventListener('touchstart', (e) => {
-            const tx = e.touches[0].clientX;
-            const ty = e.touches[0].clientY;
+            const touch = e.touches[0];
+            // 拡大率を考慮した座標計算
+            const tx = touch.clientX;
+            const ty = touch.clientY;
 
             items.forEach(item => {
                 const dist = Math.hypot(item.x - tx, item.y - ty);
-                if (dist < item.r) {
+                if (dist < item.r + 20) { // タップ範囲を少し広めに設定
                     if (item.id === 'box') {
                         if (foundCount >= 4) {
                             showMsg("僕だけで済んだんだ。");
@@ -86,7 +110,10 @@
             });
         });
 
-        window.onload = () => { draw(); msg.style.opacity = 1; };
+        window.onload = () => { 
+            draw(); 
+            setTimeout(() => { msg.style.opacity = 1; }, 500);
+        };
     </script>
 </body>
 </html>
