@@ -5,35 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: serif; overflow: hidden; }
-        
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        #start-screen { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: #000; z-index: 10; cursor: pointer; 
-        }
+        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000; z-index: 10; cursor: pointer; }
         .fade-text { opacity: 0; animation: fadeIn 2s ease-in-out forwards; }
-
         #game-ui { display: none; position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; width: 100vw; height: 100vh; }
-        
-        /* ★メッセージを上部に変更 */
-        #msg { 
-            position: absolute; top: 50px; width: 80%; left: 10%; 
-            text-align: center; font-size: 1.2rem; z-index: 6; 
-            background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; 
-            pointer-events: none; transition: opacity 0.5s;
-        }
+        #msg { position: absolute; top: 50px; width: 80%; left: 10%; text-align: center; font-size: 1.2rem; z-index: 6; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; pointer-events: none; transition: opacity 0.5s; }
     </style>
 </head>
 <body>
 
     <div id="start-screen" onclick="handleStart()">
-        <div id="screen1">
-            <p class="fade-text" style="font-size: 1.5rem;">僕は死んだ。</p>
-            <p class="fade-text" style="font-size: 1.5rem; animation-delay: 2s;">僕は笑った。</p>
-        </div>
+        <p class="fade-text" style="font-size: 1.5rem;">僕は死んだ。</p>
+        <p class="fade-text" style="font-size: 1.5rem; animation-delay: 2s;">僕は笑った。</p>
     </div>
 
     <div id="game-ui">
@@ -48,23 +32,20 @@
         const img = new Image();
         img.src = 'IMG_4790.PNG'; 
 
+        let shadowTapCount = 0; // 人影をタップした回数を記録
+
         const items = [
             { id: 'outside', x: 500, y: 300, r: 400, text: "外では赤と青の光が激しく明滅している。" },
-            { id: 'toy', x: 780, y: 750, r: 100, text: "テディベア。タグに『307』という文字が見える。" },
+            { id: 'toy', x: 780, y: 750, r: 100, text: "テディベア。タグに『2983』という文字が見える。" },
             { id: 'box', x: 520, y: 550, r: 80, text: "黒い箱。4桁の数字を求めている。" },
             { id: 'phone', x: 200, y: 850, r: 80, text: "割れたスマホ。画面の時刻は『04』時で止まっている。" },
-            { id: 'ring', x: 200, y: 720, r: 50, text: "指輪。内側に『1204』と刻印されている。" }
+            { id: 'ring', x: 200, y: 720, r: 50, text: "指輪。内側に『1204』と刻印されている。" },
+            { id: 'shadow', x: 380, y: 500, r: 100, text: "運転席の人影。" } // 新規追加
         ];
 
         function handleStart() {
             document.getElementById('start-screen').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
-            initGame();
-        }
-
-        function initGame() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
             if (img.complete) { draw(); } else { img.onload = draw; }
         }
 
@@ -88,6 +69,13 @@
                             msgDiv.innerText = "箱が開いた。……あなたは死にました。さあ、静寂を受け入れなさい。"; 
                         } else { 
                             msgDiv.innerText = "……違う。"; 
+                        }
+                    } else if (item.id === 'shadow') {
+                        shadowTapCount++;
+                        if (shadowTapCount === 1) {
+                            msgDiv.innerText = "僕は死んだんだ。";
+                        } else {
+                            msgDiv.innerText = "事故に遭ったんだ。";
                         }
                     } else {
                         msgDiv.innerText = item.text;
