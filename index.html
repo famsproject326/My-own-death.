@@ -24,16 +24,15 @@
         const img = new Image();
         img.src = 'IMG_4790.PNG'; 
 
-        // ★位置合わせが終わるまでは true にしてください
-        const DEBUG = true; 
+        const DEBUG = true; // 位置調整が終わったら false にしてください
 
-        // 画面を1000x1000の座標系としてアイテムを配置
         const items = [
-            { id: 'outside', x: 500, y: 300, r: 400, text: "外では赤と青の光が激しく回転している。救急隊が必死に動いている。" },
-            { id: 'toy', x: 780, y: 750, r: 120, text: "泥だらけのテディベア。……あの子が、いつも抱いていたものだ。" },
-            { id: 'box', x: 520, y: 550, r: 80, text: "センターコンソールに置かれた黒い箱。4桁の数字を求めている。" },
-            { id: 'phone', x: 200, y: 850, r: 80, text: "割れたスマホ。通知の時間は『12』時で止まっている。" },
-            { id: 'mirror', x: 550, y: 280, r: 50, text: "ルームミラー。映るはずの誰かの影は、もうない。" }
+            { id: 'outside', x: 500, y: 300, r: 400, text: "救急隊の光が激しく明滅している。" },
+            { id: 'toy', x: 780, y: 750, r: 100, text: "泥だらけのテディベア。タグに『307』という文字が見える。" },
+            { id: 'box', x: 520, y: 550, r: 80, text: "黒い箱。4桁の数字を求めている。" },
+            { id: 'phone', x: 200, y: 850, r: 80, text: "割れたスマホ。画面の時刻は『04』時で止まっている。" },
+            { id: 'ring', x: 200, y: 720, r: 50, text: "スマホのすぐ近くに落ちている指輪。内側には『1204』と刻印されている。" },
+            { id: 'mirror', x: 550, y: 280, r: 50, text: "ルームミラー。何も映らない。" }
         ];
 
         img.onload = () => {
@@ -66,8 +65,8 @@
                 if (Math.hypot(item.x - tx, item.y - ty) < item.r) {
                     if (item.id === 'box') {
                         let input = prompt("4桁の数字を入力");
-                        if (input === "1204") { msgDiv.innerText = "12月4日。僕たちの誕生日だ。僕だけで済んだんだ。"; }
-                        else { msgDiv.innerText = "……違う。もっと大切な日付だったはずだ。"; }
+                        if (input === "1204") { msgDiv.innerText = "箱が開いた。中には君からの手紙が入っていた。"; }
+                        else { msgDiv.innerText = "番号が違うようだ……。"; }
                     } else {
                         msgDiv.innerText = item.text;
                     }
