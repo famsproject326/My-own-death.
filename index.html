@@ -5,12 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: serif; overflow: hidden; }
-        #game-ui { position: relative; width: 100vw; height: 100vh; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        
+        #start-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000; z-index: 10; cursor: pointer; }
+        .fade-text { opacity: 0; animation: fadeIn 2s ease-in-out forwards; }
+        #tap-to-start { margin-top: 50px; animation: blink 2s ease-in-out infinite; font-size: 0.9rem; color: #888; }
+        
+        #game-ui { display: none; position: relative; width: 100vw; height: 100vh; }
         canvas { display: block; width: 100vw; height: 100vh; }
-        #msg { position: absolute; bottom: 80px; width: 80%; left: 10%; text-align: center; font-size: 1.2rem; z-index: 6; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; transition: opacity 0.5s; }
+        #msg { position: absolute; bottom: 80px; width: 80%; left: 10%; text-align: center; font-size: 1.2rem; z-index: 6; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; transition: opacity 0.5s; pointer-events: none; }
     </style>
 </head>
 <body>
+
+    <div id="start-screen" onclick="handleStart()">
+        <div id="screen1">
+            <p class="fade-text" style="font-size: 1.5rem;">僕は死んだ。</p>
+            <p class="fade-text" style="font-size: 1.5rem; animation-delay: 2s;">僕は笑った。</p>
+        </div>
+        <div id="screen2" style="display: none;">
+            <p style="font-size: 1.2rem;">なぜ、男は笑ったのか。</p>
+            <p id="tap-to-start">タップして開始</p>
+        </div>
+    </div>
 
     <div id="game-ui">
         <div id="msg">……何が起きたんだ？</div>
@@ -24,38 +42,37 @@
         const img = new Image();
         img.src = 'IMG_4790.PNG'; 
 
-        const DEBUG = true; // 位置調整が終わったら false に
-        let gameState = "normal"; // normal, reading_letter, end
+        const DEBUG = false; // デバッグモードを解除しました
+        let gameState = "normal"; 
         let letterStep = 0;
 
         const items = [
-            { id: 'outside', x: 500, y: 300, r: 400, text: "外では赤と青の光が明滅している。" },
-            { id: 'toy', x: 780, y: 750, r: 100, text: "テディベア。タグに『307』と書かれている。" },
+            { id: 'outside', x: 500, y: 300, r: 400, text: "外では赤と青の光が激しく明滅している。" },
+            { id: 'toy', x: 780, y: 750, r: 100, text: "テディベア。タグに『307』という文字が見える。" },
             { id: 'box', x: 520, y: 550, r: 80, text: "黒い箱。4桁の数字を求めている。" },
-            { id: 'phone', x: 200, y: 850, r: 80, text: "割れたスマホ。時刻は『04』時で止まっている。" },
+            { id: 'phone', x: 200, y: 850, r: 80, text: "割れたスマホ。画面の時刻は『04』時で止まっている。" },
             { id: 'ring', x: 200, y: 720, r: 50, text: "指輪。内側に『1204』と刻印されている。" }
         ];
 
-        img.onload = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            draw();
-        };
+        function handleStart() {
+            const s1 = document.getElementById('screen1');
+            const s2 = document.getElementById('screen2');
+            if (s1.style.display !== 'none') {
+                s1.style.display = 'none';
+                s2.style.display = 'block';
+            } else {
+                document.getElementById('start-screen').style.display = 'none';
+                document.getElementById('game-ui').style.display = 'block';
+                img.onload = draw;
+                draw();
+            }
+        }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'rgba(0,0,0,0.5)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            if (DEBUG) {
-                items.forEach(item => {
-                    ctx.beginPath();
-                    ctx.arc(item.x * canvas.width / 1000, item.y * canvas.height / 1000, item.r * canvas.width / 1000, 0, Math.PI*2);
-                    ctx.strokeStyle = 'red';
-                    ctx.stroke();
-                });
-            }
         }
 
         canvas.addEventListener('touchstart', (e) => {
